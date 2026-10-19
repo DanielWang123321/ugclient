@@ -6,6 +6,7 @@ socket and is executed by the parent against the active (sim or real) backend.
 This process can therefore be terminated by the UI at any time, even if the
 user code is blocked in time.sleep() or an SDK call.
 """
+
 from __future__ import annotations
 
 import json
@@ -33,15 +34,32 @@ class _ArmProxy:
             raise RuntimeError(resp.get("error", "arm call failed"))
         return resp.get("result")
 
-    def get_joints(self): return self._call("get_joints")
-    def get_tcp(self): return self._call("get_tcp")
-    def get_state(self): return self._call("get_state")
-    def set_joints(self, q_deg, speed_pct=None): return self._call("set_joints", list(q_deg), speed_pct)
-    def move_to(self, q_deg, speed_pct=None): return self._call("move_to", list(q_deg), speed_pct)
-    def move_tcp(self, pose, speed_pct=None): return self._call("move_tcp", list(pose), speed_pct)
-    def jog_tcp(self, axis, delta): return self._call("jog_tcp", axis, delta)
-    def home(self): return self._call("home")
-    def stop(self): return self._call("stop")
+    def get_joints(self):
+        return self._call("get_joints")
+
+    def get_tcp(self):
+        return self._call("get_tcp")
+
+    def get_state(self):
+        return self._call("get_state")
+
+    def set_joints(self, q_deg, speed_pct=None):
+        return self._call("set_joints", list(q_deg), speed_pct)
+
+    def move_to(self, q_deg, speed_pct=None):
+        return self._call("move_to", list(q_deg), speed_pct)
+
+    def move_tcp(self, pose, speed_pct=None):
+        return self._call("move_tcp", list(pose), speed_pct)
+
+    def jog_tcp(self, axis, delta):
+        return self._call("jog_tcp", axis, delta)
+
+    def home(self):
+        return self._call("home")
+
+    def stop(self):
+        return self._call("stop")
 
 
 def main() -> int:

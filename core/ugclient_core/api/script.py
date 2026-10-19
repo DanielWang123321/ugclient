@@ -1,4 +1,5 @@
 """Script RPCs: script.start / script.status / script.stop (see scripting.py)."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -11,6 +12,7 @@ from .connection import active_backend
 def _runner(store: SessionStore):
     if store.script_runner is None:
         from ..scripting import ScriptRunner
+
         # Backend is resolved per-call (not captured) so a script follows sim/real switches.
         store.script_runner = ScriptRunner(lambda: active_backend(store, {"session_id": store.last_session_id}))
     return store.script_runner

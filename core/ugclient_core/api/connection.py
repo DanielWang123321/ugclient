@@ -6,6 +6,7 @@ from the arm; otherwise they go to the per-session SimBackend. Frontend jog /
 Home / Align / STOP and scripts all go through here (or through ArmFacade,
 which resolves the same way), so script and UI behaviour are identical.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -35,8 +36,13 @@ def connect(params: dict[str, Any], store: SessionStore) -> dict[str, Any]:
     if not ip:
         raise invalid_params("ip is required")
     backend = store.connection.connect_real(ip)  # raises (and stays in sim) on failure
-    return {**store.connection.status(), "q_deg": backend.get_joints_deg(),
-            "tcp_pose": backend.get_tcp_pose(), "state": backend.get_state(), "robot_mode": backend.get_mode()}
+    return {
+        **store.connection.status(),
+        "q_deg": backend.get_joints_deg(),
+        "tcp_pose": backend.get_tcp_pose(),
+        "state": backend.get_state(),
+        "robot_mode": backend.get_mode(),
+    }
 
 
 def disconnect(_: dict[str, Any], store: SessionStore) -> dict[str, Any]:
@@ -50,8 +56,13 @@ def status(_: dict[str, Any], store: SessionStore) -> dict[str, Any]:
 
 def poll(params: dict[str, Any], store: SessionStore) -> dict[str, Any]:
     b = active_backend(store, params)
-    return {"mode": store.connection.mode.value, "q_deg": b.get_joints_deg(), "tcp_pose": b.get_tcp_pose(),
-            "state": b.get_state(), "robot_mode": b.get_mode()}
+    return {
+        "mode": store.connection.mode.value,
+        "q_deg": b.get_joints_deg(),
+        "tcp_pose": b.get_tcp_pose(),
+        "state": b.get_state(),
+        "robot_mode": b.get_mode(),
+    }
 
 
 def move_joints(params: dict[str, Any], store: SessionStore) -> dict[str, Any]:

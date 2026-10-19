@@ -11,6 +11,7 @@ script UI's next call and the same script works in both modes. Stop / timeout
 terminates the subprocess, which kills even code blocked in time.sleep().
 Only one script runs at a time.
 """
+
 from __future__ import annotations
 
 import json
@@ -23,8 +24,9 @@ import threading
 import time
 import types
 import uuid
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from .errors import BACKEND_UNAVAILABLE, RpcError
 
@@ -52,18 +54,27 @@ class ArmFacade:
             raise ScriptStopped("script stopped")
         return self._get()
 
-    def get_joints(self): return self._b().get_joints_deg()
-    def get_tcp(self): return self._b().get_tcp_pose()
-    def get_state(self): return self._b().get_state()
+    def get_joints(self):
+        return self._b().get_joints_deg()
+
+    def get_tcp(self):
+        return self._b().get_tcp_pose()
+
+    def get_state(self):
+        return self._b().get_state()
 
     def set_joints(self, q_deg, speed_pct=None):
-        b = self._b(); b.set_joints_deg([float(v) for v in q_deg], speed_pct); return b.get_joints_deg()
+        b = self._b()
+        b.set_joints_deg([float(v) for v in q_deg], speed_pct)
+        return b.get_joints_deg()
 
     def move_to(self, q_deg, speed_pct=None):
         return self.set_joints(q_deg, speed_pct)
 
     def move_tcp(self, pose, speed_pct=None):
-        b = self._b(); b.move_tcp_pose([float(v) for v in pose], speed_pct); return b.get_tcp_pose()
+        b = self._b()
+        b.move_tcp_pose([float(v) for v in pose], speed_pct)
+        return b.get_tcp_pose()
 
     def jog_tcp(self, axis: str, delta: float):
         b = self._b()
@@ -76,7 +87,8 @@ class ArmFacade:
         return b.get_joints_deg()
 
     def home(self):
-        b = self._b(); return self.set_joints([0.0] * len(b.get_joints_deg()))
+        b = self._b()
+        return self.set_joints([0.0] * len(b.get_joints_deg()))
 
     def stop(self):
         self._b().stop()
@@ -111,7 +123,8 @@ class ScriptRunner:
             except Exception as e:  # report backend/script errors to the worker, keep serving
                 resp = {"ok": False, "error": f"{type(e).__name__}: {e}"}
             try:
-                w.write(json.dumps(resp) + "\n"); w.flush()
+                w.write(json.dumps(resp) + "\n")
+                w.flush()
             except OSError:
                 break
 
@@ -119,13 +132,21 @@ class ScriptRunner:
         if self._current and self._jobs[self._current]["status"] == "running":
             raise RpcError(BACKEND_UNAVAILABLE, "a script is already running (stop it first)")
         job_id = uuid.uuid4().hex[:12]
-        job: dict[str, Any] = {"id": job_id, "status": "running", "output": [], "error": "",
-                               "lock": threading.Lock(), "stop": threading.Event(), "started": time.time()}
+        job: dict[str, Any] = {
+            "id": job_id,
+            "status": "running",
+            "output": [],
+            "error": "",
+            "lock": threading.Lock(),
+            "stop": threading.Event(),
+            "started": time.time(),
+        }
         self._jobs[job_id] = job
         self._current = job_id
 
         server = socket.socket()
-        server.bind(("127.0.0.1", 0)); server.listen(1)
+        server.bind(("127.0.0.1", 0))
+        server.listen(1)
         job["server"] = server
         threading.Thread(target=self._serve_arm, args=(job, server), daemon=True).start()
 
@@ -133,11 +154,20 @@ class ScriptRunner:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             f.write(code)
         job["file"] = path
-        env = {**os.environ, "UGCLIENT_ARM_SOCKET": f"127.0.0.1:{server.getsockname()[1]}",
-               "PYTHONPATH": os.pathsep.join([str(Path(__file__).resolve().parent.parent),
-                                               os.environ.get("PYTHONPATH", "")])}
-        proc = subprocess.Popen([sys.executable, "-u", "-m", "ugclient_core.script_worker", path],
-                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env)
+        env = {
+            **os.environ,
+            "UGCLIENT_ARM_SOCKET": f"127.0.0.1:{server.getsockname()[1]}",
+            "PYTHONPATH": os.pathsep.join(
+                [str(Path(__file__).resolve().parent.parent), os.environ.get("PYTHONPATH", "")]
+            ),
+        }
+        proc = subprocess.Popen(
+            [sys.executable, "-u", "-m", "ugclient_core.script_worker", path],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            env=env,
+        )
         job["proc"] = proc
 
         def collect() -> None:
@@ -159,7 +189,9 @@ class ScriptRunner:
                     job["status"] = "error"
                     lines = [ln.strip() for ln in "".join(job["output"]).splitlines() if ln.strip()]
                     detail = lines[-1] if lines else ""
-                    job["error"] = f"script exited with code {code_}: {detail}" if detail else f"script exited with code {code_}"
+                    job["error"] = (
+                        f"script exited with code {code_}: {detail}" if detail else f"script exited with code {code_}"
+                    )
 
         threading.Thread(target=collect, daemon=True).start()
 
@@ -192,5 +224,10 @@ class ScriptRunner:
             raise RpcError(BACKEND_UNAVAILABLE, f"script job {job_id!r} not found")
         with job["lock"]:
             out = "".join(job["output"])
-        return {"job_id": job_id, "status": job["status"], "output": out, "error": job["error"],
-                "elapsed_s": round(time.time() - job["started"], 3)}
+        return {
+            "job_id": job_id,
+            "status": job["status"],
+            "output": out,
+            "error": job["error"],
+            "elapsed_s": round(time.time() - job["started"], 3),
+        }

@@ -6,10 +6,12 @@ The real-robot path is deliberately isolated here: it is the ONLY module that im
 real-robot code leaks into the sim-only kinematics / motion modules.
 Units at this boundary: joints deg, TCP pose [x,y,z mm, roll,pitch,yaw deg].
 """
+
 from __future__ import annotations
 
 import enum
-from typing import Any, Callable, Protocol
+from collections.abc import Callable
+from typing import Any, Protocol
 
 import numpy as np
 
@@ -63,6 +65,7 @@ class ConnectionStateMachine:
 
 class ArmBackend(Protocol):
     name: str
+
     def get_joints_deg(self) -> list[float]: ...
     def get_tcp_pose(self) -> list[float]: ...
     def get_state(self) -> int: ...
@@ -103,12 +106,18 @@ class SimBackend:
         self._state = 2
 
     def move_tcp_pose(self, pose, speed_pct=None) -> None:
-        from .api.kin import solve_ik  # local: kin imports session types only
 
-        sols = self._s.kin.ik(units.pose_api_to_si(np.array(pose, dtype=float)), "tcp",
-                              units.deg_to_rad(np.array(self._q_deg)), "nearest", 1e-5, np.radians(0.01))
+        sols = self._s.kin.ik(
+            units.pose_api_to_si(np.array(pose, dtype=float)),
+            "tcp",
+            units.deg_to_rad(np.array(self._q_deg)),
+            "nearest",
+            1e-5,
+            np.radians(0.01),
+        )
         if not sols:
             from .errors import IK_NOT_CONVERGED
+
             raise RpcError(IK_NOT_CONVERGED, "no IK solution found (target may be unreachable)")
         self._q_deg = units.rad_to_deg(sols[0].q).tolist()
         self._state = 2
@@ -117,8 +126,10 @@ class SimBackend:
         """One base-frame TCP increment; returns new joints. Reuses the sim jog solver."""
         from .api.motion import jog_tcp as _jog
 
-        r = _jog({"session_id": self._s.session_id, "q_deg": list(self._q_deg), "axis": axis, "delta": delta},
-                 _SessionLookup(self._s))
+        r = _jog(
+            {"session_id": self._s.session_id, "q_deg": list(self._q_deg), "axis": axis, "delta": delta},
+            _SessionLookup(self._s),
+        )
         self._q_deg = [float(v) for v in r["q_deg"]]
         return list(self._q_deg)
 
@@ -131,16 +142,21 @@ class SimBackend:
 
 class _SessionLookup:
     """Minimal store shim so api.motion.jog_tcp can find the one sim session."""
-    def __init__(self, session): self._s = session
-    def get(self, _sid): return self._s
+
+    def __init__(self, session):
+        self._s = session
+
+    def get(self, _sid):
+        return self._s
 
 
 def _default_xarm_factory(ip: str):
     try:
         from xarm.wrapper import XArmAPI  # xarm-python-sdk (optional dependency: pip install ugclient-core[real])
     except ImportError as e:
-        raise RpcError(BACKEND_UNAVAILABLE,
-                       "xarm-python-sdk is not installed in the sidecar (install ugclient-core[real])") from e
+        raise RpcError(
+            BACKEND_UNAVAILABLE, "xarm-python-sdk is not installed in the sidecar (install ugclient-core[real])"
+        ) from e
     return XArmAPI(ip)
 
 
@@ -174,10 +190,14 @@ class RealBackend:
             # A connection check that actually talks to the arm: state + joints must read back.
             _ = self.get_state()
             _ = self.get_joints_deg()
-            if hasattr(api, "clean_error"): api.clean_error()
-            if hasattr(api, "clean_warn"): api.clean_warn()
-            if hasattr(api, "motion_enable"): api.motion_enable(True)
-            if hasattr(api, "set_state"): api.set_state(0)
+            if hasattr(api, "clean_error"):
+                api.clean_error()
+            if hasattr(api, "clean_warn"):
+                api.clean_warn()
+            if hasattr(api, "motion_enable"):
+                api.motion_enable(True)
+            if hasattr(api, "set_state"):
+                api.set_state(0)
         except RpcError:
             raise
         except Exception as e:  # SDK raises / returns odd types depending on version
@@ -209,8 +229,9 @@ class RealBackend:
         try:
             ret = self._api.set_position(pose, wait=True)
         except TypeError:
-            ret = self._api.set_position(x=pose[0], y=pose[1], z=pose[2],
-                                         roll=pose[3], pitch=pose[4], yaw=pose[5], wait=True)
+            ret = self._api.set_position(
+                x=pose[0], y=pose[1], z=pose[2], roll=pose[3], pitch=pose[4], yaw=pose[5], wait=True
+            )
         self._unwrap(ret, "set_position")
 
     def stop(self) -> None:
@@ -266,5 +287,9 @@ class ConnectionManager:
             self.sm.transition(Mode.SIM)
 
     def status(self) -> dict[str, Any]:
-        return {"mode": self.sm.mode.value, "ip": self.sm.ip, "last_error": self.sm.last_error,
-                "connected": self.sm.mode is Mode.REAL}
+        return {
+            "mode": self.sm.mode.value,
+            "ip": self.sm.ip,
+            "last_error": self.sm.last_error,
+            "connected": self.sm.mode is Mode.REAL,
+        }

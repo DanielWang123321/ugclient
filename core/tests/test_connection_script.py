@@ -3,14 +3,14 @@
 No real robot is used here: RealBackend gets a fake XArmAPI, the sim endpoint
 is a fake ArmBackend (plus one integration test through the real RPC layer).
 """
+
 import time
 
 import pytest
 
-from ugclient_core import errors
+from ugclient_core.errors import RpcError
 from ugclient_core.robot_backend import ConnectionManager, Mode, RealBackend
 from ugclient_core.scripting import ArmFacade, ScriptRunner, ScriptStopped  # noqa: F401
-import threading
 
 
 class FakeXArmAPI:
@@ -25,31 +25,58 @@ class FakeXArmAPI:
             raise ConnectionError("no route to host")
         return 0
 
-    def get_servo_angle(self): return (9, None) if self.fail else (0, list(self.q))
-    def get_position(self): return 0, list(self.pose)
-    def get_state(self): return (0, self.state)
-    def get_mode(self): return (0, 0)
-    def set_servo_angle(self, angle, **kw): self.q = list(angle); return 0
-    def set_position(self, pose, **kw): self.pose = list(pose); return 0
-    def set_state(self, s): self.stopped_state = s; self.state = s; return 0
-    def motion_enable(self, on): return 0
-    def clean_error(self): return 0
-    def clean_warn(self): return 0
-    def disconnect(self): self.disconnected = True
+    def get_servo_angle(self):
+        return (9, None) if self.fail else (0, list(self.q))
+
+    def get_position(self):
+        return 0, list(self.pose)
+
+    def get_state(self):
+        return (0, self.state)
+
+    def get_mode(self):
+        return (0, 0)
+
+    def set_servo_angle(self, angle, **kw):
+        self.q = list(angle)
+        return 0
+
+    def set_position(self, pose, **kw):
+        self.pose = list(pose)
+        return 0
+
+    def set_state(self, s):
+        self.stopped_state = s
+        self.state = s
+        return 0
+
+    def motion_enable(self, on):
+        return 0
+
+    def clean_error(self):
+        return 0
+
+    def clean_warn(self):
+        return 0
+
+    def disconnect(self):
+        self.disconnected = True
 
 
 def make_manager(fail=False):
     holder = {}
+
     def factory(ip, api_factory=None):
         api = FakeXArmAPI(ip, fail=fail)
         holder["api"] = api
         return RealBackend(ip, lambda _ip: api)
+
     return ConnectionManager(real_factory=factory), holder
 
 
 def test_failed_connect_stays_in_sim_and_reports_error():
     mgr, _ = make_manager(fail=True)
-    with pytest.raises(Exception):
+    with pytest.raises(RpcError):
         mgr.connect_real("10.0.0.9")
     assert mgr.mode is Mode.SIM
     assert mgr.status()["connected"] is False
@@ -70,22 +97,40 @@ def test_successful_connect_then_clean_disconnect():
 
 def test_empty_ip_is_rejected_before_any_transition():
     mgr, _ = make_manager()
-    with pytest.raises(Exception):
+    with pytest.raises(RpcError):
         mgr.connect_real("  ")
     assert mgr.mode is Mode.SIM
 
 
 class FakeBackend:
     name = "fake"
-    def __init__(self, label): self.label, self.q, self.pose, self._state = label, [0.0]*6, [300,0,200,180,0,0], 2
-    def get_joints_deg(self): return list(self.q)
-    def get_tcp_pose(self): return list(self.pose)
-    def get_state(self): return self._state
-    def get_mode(self): return 0
-    def set_joints_deg(self, q, speed_pct=None): self.q = list(q)
-    def move_tcp_pose(self, pose, speed_pct=None): self.pose = list(pose)
-    def stop(self): self._state = 4
-    def close(self): pass
+
+    def __init__(self, label):
+        self.label, self.q, self.pose, self._state = label, [0.0] * 6, [300, 0, 200, 180, 0, 0], 2
+
+    def get_joints_deg(self):
+        return list(self.q)
+
+    def get_tcp_pose(self):
+        return list(self.pose)
+
+    def get_state(self):
+        return self._state
+
+    def get_mode(self):
+        return 0
+
+    def set_joints_deg(self, q, speed_pct=None):
+        self.q = list(q)
+
+    def move_tcp_pose(self, pose, speed_pct=None):
+        self.pose = list(pose)
+
+    def stop(self):
+        self._state = 4
+
+    def close(self):
+        pass
 
 
 def _run(runner, code, timeout=5.0):
@@ -104,7 +149,7 @@ def test_script_routes_to_whichever_backend_is_active():
     runner = ScriptRunner(lambda: active["b"])
     st = _run(runner, "from ugclient_sdk import arm\narm.set_joints([1,2,3,4,5,6])\nprint('joints', arm.get_joints())")
     assert st["status"] == "done" and "joints [1.0" in st["output"]
-    assert sim.q == [1, 2, 3, 4, 5, 6] and real.q == [0.0]*6
+    assert sim.q == [1, 2, 3, 4, 5, 6] and real.q == [0.0] * 6
     active["b"] = real  # user switched to Real: the SAME script now drives the real endpoint
     st = _run(runner, "arm.move_to([6,5,4,3,2,1])\narm.move_tcp([310,0,200,180,0,0])")
     assert st["status"] == "done"
@@ -118,8 +163,10 @@ def test_stuck_script_is_killable_and_reports_error_and_stdout():
     runner.stop(jid)
     st = runner.status(jid)
     for _ in range(50):
-        if st["status"] != "running": break
-        time.sleep(0.05); st = runner.status(jid)
+        if st["status"] != "running":
+            break
+        time.sleep(0.05)
+        st = runner.status(jid)
     assert st["status"] == "stopped" and "hello" in st["output"]
     st2 = _run(runner, "raise ValueError('boom')")
     assert st2["status"] == "error" and "boom" in st2["error"]
@@ -133,6 +180,7 @@ def test_script_timeout_kills_job():
 
 # --- Integration through the RPC layer (sim endpoint is the real Pinocchio session) ---
 
+
 def test_rpc_connect_failure_stays_sim(client):
     r = client.raw("robot.connect", {"ip": "192.0.2.1"})
     assert "error" in r  # xarm-python-sdk not installed / unreachable: must not switch
@@ -141,11 +189,13 @@ def test_rpc_connect_failure_stays_sim(client):
 
 def test_rpc_script_runs_against_sim_model(client):
     sid = client.call("robot.load", robot="uf850")["session_id"]
-    jid = client.call("script.start", session_id=sid,
-                      code="arm.set_joints([0, -30, -60, 0, 60, 0])\nprint(arm.get_tcp())")["job_id"]
+    jid = client.call(
+        "script.start", session_id=sid, code="arm.set_joints([0, -30, -60, 0, 60, 0])\nprint(arm.get_tcp())"
+    )["job_id"]
     for _ in range(100):
         st = client.call("script.status", job_id=jid)
-        if st["status"] != "running": break
+        if st["status"] != "running":
+            break
         time.sleep(0.05)
     assert st["status"] == "done", st
     poll = client.call("robot.poll", session_id=sid)
