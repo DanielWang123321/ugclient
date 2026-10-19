@@ -1,6 +1,7 @@
 """Script worker process: executes one user script with an `arm` proxy.
 
-Run as ``python -m ugclient_core.script_worker <codefile>``. The parent sidecar
+Run as ``python -m ugclient_core.script_worker <codefile>`` (or, in the frozen
+sidecar, ``ugclient-core --script-worker <codefile>``). The parent sidecar
 passes UGCLIENT_ARM_SOCKET=host:port; every arm call is one JSON line over that
 socket and is executed by the parent against the active (sim or real) backend.
 This process can therefore be terminated by the UI at any time, even if the
@@ -62,14 +63,20 @@ class _ArmProxy:
         return self._call("stop")
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    path = (argv if argv is not None else sys.argv[1:])[0]
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(line_buffering=True)  # console output streams live, also when frozen
+        except (AttributeError, ValueError):
+            pass
     arm = _ArmProxy()
     mod = types.ModuleType("ugclient_sdk")
     mod.arm = arm  # type: ignore[attr-defined]
     sys.modules["ugclient_sdk"] = mod
-    with open(sys.argv[1], encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         code = f.read()
-    exec(compile(code, sys.argv[1], "exec"), {"__name__": "__main__", "__builtins__": __builtins__, "arm": arm})  # noqa: S102
+    exec(compile(code, path, "exec"), {"__name__": "__main__", "__builtins__": __builtins__, "arm": arm})  # noqa: S102
     return 0
 
 

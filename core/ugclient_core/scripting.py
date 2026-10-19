@@ -31,6 +31,18 @@ from typing import Any
 from .errors import BACKEND_UNAVAILABLE, RpcError
 
 
+def _worker_cmd(path: str) -> list[str]:
+    """Command line for the script worker subprocess.
+
+    In a PyInstaller (frozen) sidecar, sys.executable is the ugclient-core binary,
+    not a Python interpreter, so `-m ugclient_core.script_worker` would be rejected
+    by its argparse. The binary dispatches `--script-worker <file>` itself instead.
+    """
+    if getattr(sys, "frozen", False):
+        return [sys.executable, "--script-worker", path]
+    return [sys.executable, "-u", "-m", "ugclient_core.script_worker", path]
+
+
 class ScriptStopped(Exception):
     pass
 
@@ -162,7 +174,7 @@ class ScriptRunner:
             ),
         }
         proc = subprocess.Popen(
-            [sys.executable, "-u", "-m", "ugclient_core.script_worker", path],
+            _worker_cmd(path),
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,

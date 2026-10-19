@@ -200,3 +200,27 @@ def test_rpc_script_runs_against_sim_model(client):
     assert st["status"] == "done", st
     poll = client.call("robot.poll", session_id=sid)
     assert poll["mode"] == "sim" and poll["q_deg"] == pytest.approx([0, -30, -60, 0, 60, 0])
+
+
+# --- packaged (PyInstaller) sidecar: script worker dispatch ------------------------------------
+
+
+def test_worker_cmd_frozen_uses_sidecar_flag(monkeypatch):
+    import sys
+
+    from ugclient_core import scripting
+
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    assert scripting._worker_cmd("/tmp/x.py") == [sys.executable, "--script-worker", "/tmp/x.py"]
+    monkeypatch.delattr(sys, "frozen")
+    assert scripting._worker_cmd("/tmp/x.py")[1:4] == ["-u", "-m", "ugclient_core.script_worker"]
+
+
+def test_main_dispatches_script_worker(monkeypatch):
+    from ugclient_core import __main__ as entry
+    from ugclient_core import script_worker
+
+    seen = {}
+    monkeypatch.setattr(script_worker, "main", lambda argv: seen.setdefault("argv", argv) and 0)
+    assert entry.main(["--script-worker", "/tmp/x.py"]) == 0
+    assert seen["argv"] == ["/tmp/x.py"]
