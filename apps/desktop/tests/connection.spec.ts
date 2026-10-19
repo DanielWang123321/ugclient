@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 
-vi.mock('element-plus', () => ({ ElMessageBox: { alert: vi.fn(async () => 'confirm') } }))
+vi.mock('element-plus', async (orig) => ({ ...(await orig<object>()), ElMessageBox: { alert: vi.fn(async () => 'confirm') } }))
 
 import { useEngineStore } from '../src/stores/engine'
 import { useRobotStore } from '../src/stores/robot'
@@ -95,5 +95,34 @@ describe('sim/real connection', () => {
     expect(EXAMPLE_SCRIPTS.joint).toContain('arm.set_joints')
     expect(EXAMPLE_SCRIPTS.tcp).toContain('arm.move_tcp')
     expect(ws.sent.map((c) => c.method)).toContain('script.start')
+  })
+})
+
+describe('script page (sim)', () => {
+  beforeEach(() => { localStorage.clear(); setActivePinia(createPinia()) })
+  it('pose moved by a script in simulation is mirrored into the UI and kept on the control page', async () => {
+    const ws = await boot(true)
+    const { mount } = await import('@vue/test-utils')
+    const ScriptView = (await import('../src/views/ScriptView.vue')).default
+    const { i18n } = await import('../src/i18n')
+    const w = mount(ScriptView, { global: { plugins: [i18n] } })
+    const vm = w.vm as unknown as { run: () => Promise<void>; poll: () => Promise<void> }
+    await vm.run()
+    await vm.poll()
+    // sim pose sync: UI pose pushed before start, then read back from robot.poll (q[0] = 7 in the fake)
+    expect(ws.sent.find((c) => c.method === 'robot.move_joints')).toBeTruthy()
+    expect(useRobotStore().q[0]).toBe(7)
+    w.unmount() // leaving the script page keeps the store pose
+    expect(useRobotStore().q[0]).toBe(7)
+  })
+  it('Run/Stop sit at the left of the toolbar, before the example/open/save controls', async () => {
+    await boot(true)
+    const { mount } = await import('@vue/test-utils')
+    const ScriptView = (await import('../src/views/ScriptView.vue')).default
+    const { i18n } = await import('../src/i18n')
+    const w = mount(ScriptView, { global: { plugins: [i18n] } })
+    const html = w.find('.toolbar').html()
+    expect(html.indexOf('script-run')).toBeLessThan(html.indexOf('script-open'))
+    expect(html.indexOf('script-stop')).toBeLessThan(html.indexOf('script-open'))
   })
 })

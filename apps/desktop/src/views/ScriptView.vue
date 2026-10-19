@@ -32,10 +32,17 @@ function saveFile() {
   a.click()
   URL.revokeObjectURL(a.href)
 }
+/** Sim mode: mirror the sidecar sim pose (moved by the script) into the UI, like real-mode readback. */
+async function syncSimPose() {
+  if (conn.mode !== 'sim' || !robot.sessionId) return
+  const r = await engine.call<{ q_deg: number[] }>('robot.poll', { session_id: robot.sessionId })
+  if (r.q_deg?.length && r.q_deg.some((v, i) => v !== robot.q[i])) await robot.setQ(r.q_deg)
+}
 async function poll() {
   if (!jobId) return
   try {
     status.value = await engine.call<ScriptStatus>('script.status', { job_id: jobId })
+    await syncSimPose()
     if (status.value.status !== 'running') { running.value = false; stopPoll() }
   } catch { stopPoll(); running.value = false }
 }
@@ -43,6 +50,10 @@ function stopPoll() { if (timer) clearInterval(timer); timer = null }
 async function run() {
   if (running.value) return
   status.value = null
+  // Sim mode: start the script from the pose shown in the UI (jogs only change the frontend q).
+  if (conn.mode === 'sim' && robot.sessionId && robot.q.length) {
+    await engine.call('robot.move_joints', { session_id: robot.sessionId, q_deg: [...robot.q] })
+  }
   const r = await engine.call<{ job_id: string }>('script.start', { session_id: robot.sessionId, code: code.value, timeout_s: timeoutS.value })
   jobId = r.job_id
   running.value = true
@@ -54,12 +65,15 @@ async function kill() {
   void poll()
 }
 onBeforeUnmount(stopPoll)
+defineExpose({ run, poll })
 </script>
 
 <template>
   <div class="script dark-panel" data-test="script-view">
     <div class="toolbar">
       <b>{{ $t('script.title') }}</b>
+      <el-button size="small" type="primary" :disabled="running" data-test="script-run" @click="run">{{ $t('script.run') }}</el-button>
+      <el-button size="small" type="danger" :disabled="!running" data-test="script-stop" @click="kill">{{ $t('script.stop') }}</el-button>
       <span class="mode">{{ conn.mode === 'real' ? $t('conn.real') : $t('conn.simulation') }}</span>
       <span class="sp" />
       <el-select :model-value="example" size="small" style="width: 150px" @update:model-value="pickExample">
@@ -71,8 +85,6 @@ onBeforeUnmount(stopPoll)
       <el-button size="small" data-test="script-save" @click="saveFile">{{ $t('script.save') }}</el-button>
       <span class="tmo">{{ $t('script.timeout') }}</span>
       <el-input-number v-model="timeoutS" size="small" :min="1" :max="3600" style="width: 90px" />
-      <el-button size="small" type="primary" :disabled="running" data-test="script-run" @click="run">{{ $t('script.run') }}</el-button>
-      <el-button size="small" type="danger" :disabled="!running" data-test="script-stop" @click="kill">{{ $t('script.stop') }}</el-button>
     </div>
     <textarea v-model="code" class="editor" data-test="script-editor" spellcheck="false" />
     <div class="console-h">

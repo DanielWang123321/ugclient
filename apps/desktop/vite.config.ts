@@ -17,5 +17,5 @@ export default defineConfig({
   server: { port: 1420, strictPort: true, host: host || false },
   envPrefix: ['VITE_', 'TAURI_ENV_*'],
   build: { target: 'es2021', chunkSizeWarningLimit: 1500 },
-  test: { environment: 'jsdom', include: ['tests/**/*.spec.ts'] },
+  test: { environment: 'jsdom', include: ['tests/**/*.spec.ts'], server: { deps: { inline: ['element-plus'] } } },
 })

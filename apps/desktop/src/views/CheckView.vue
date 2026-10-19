@@ -57,7 +57,7 @@ const insets = { left: 284, right: 274, top: 0, bottom: 260 }
 .bar { position: absolute; left: 284px; right: 274px; bottom: 12px; }
 .sep { border-top: 1px solid #333; margin: 14px 0; flex: none; }
 .grow { flex: 1; min-height: 14px; }
-.scriptwrap { position: absolute; left: 284px; right: 274px; top: 12px; bottom: 12px; z-index: 5; }
+.scriptwrap { position: absolute; left: 284px; right: 274px; top: 64px; /* below the floating page tabs, STOP and language switch */ bottom: 12px; z-index: 5; }
 .pagetab { position: absolute; top: 16px; left: 296px; z-index: 9; display: flex; background: #1f2023; border-radius: 8px; padding: 3px; }
 .pagetab button { background: none; border: 0; color: #9a9ca3; font: inherit; font-size: 12px; padding: 6px 14px; border-radius: 6px; cursor: pointer; }
 .pagetab button.on { background: #3b6ef5; color: #fff; }

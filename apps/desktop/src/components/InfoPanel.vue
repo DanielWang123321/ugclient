@@ -33,7 +33,7 @@ const jointOrder = computed(() => {
     <div class="kv">
       <i>{{ $t('info.state') }}</i>
       <b :class="stateKey" data-test="sim-state">{{ $t(`info.${stateKey}`) }} ({{ displayState }})</b>
-      <i>{{ $t('info.mode') }}</i><b>{{ conn.mode === 'real' ? $t('conn.real') : $t('conn.simulation') }} · {{ $t('info.position') }}</b>
+      <i>{{ $t('info.mode') }}</i><b class="wide" data-test="info-mode">{{ conn.mode === 'real' ? $t('conn.real') : $t('conn.simulation') }} · {{ $t('info.position') }}</b>
       <i>{{ $t('info.payload') }}</i><b>{{ fmt(robot.payload.mass_kg, 2) }} kg</b>
       <i>{{ $t('robot.mounting') }}</i><b>{{ $t('robot.floor') }}</b>
     </div>
@@ -65,6 +65,7 @@ h3 { margin: 0 0 12px; font-size: 15px; font-weight: 600; }
 .kv i { font-style: normal; color: #9a9ca3; }
 .ro { color: #fff; font-variant-numeric: tabular-nums; }
 .sep { border-top: 1px solid #333; margin: 14px 0; }
+.kv b.wide { grid-column: span 3; white-space: normal; }
 .kv b.ready { color: #4cd28a; }
 .kv b.moving { color: #6a8ff7; }
 .kv b.stopped { color: #f0a63a; }
