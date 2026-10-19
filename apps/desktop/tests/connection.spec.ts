@@ -11,6 +11,9 @@ import { useSettingsStore, SETTINGS_KEY } from '../src/stores/settings'
 import { RpcClient } from '../src/rpc/client'
 import { FakeWs, HELLO } from './fakeEngine'
 import { EXAMPLE_SCRIPTS } from '../src/lib/examples'
+import { flushPromises, mount } from '@vue/test-utils'
+import ScriptView from '../src/views/ScriptView.vue'
+import { i18n } from '../src/i18n'
 
 const MODEL: [number, number][] = [[-360, 360], [-150, 150], [-3.5, 300], [-360, 360], [-124, 124], [-360, 360]]
 const LOAD = {
@@ -102,13 +105,12 @@ describe('script page (sim)', () => {
   beforeEach(() => { localStorage.clear(); setActivePinia(createPinia()) })
   it('pose moved by a script in simulation is mirrored into the UI and kept on the control page', async () => {
     const ws = await boot(true)
-    const { mount } = await import('@vue/test-utils')
-    const ScriptView = (await import('../src/views/ScriptView.vue')).default
-    const { i18n } = await import('../src/i18n')
     const w = mount(ScriptView, { global: { plugins: [i18n] } })
     const vm = w.vm as unknown as { run: () => Promise<void>; poll: () => Promise<void> }
     await vm.run()
+    await flushPromises()
     await vm.poll()
+    await flushPromises()
     // sim pose sync: UI pose pushed before start, then read back from robot.poll (q[0] = 7 in the fake)
     expect(ws.sent.find((c) => c.method === 'robot.move_joints')).toBeTruthy()
     expect(useRobotStore().q[0]).toBe(7)
@@ -117,9 +119,6 @@ describe('script page (sim)', () => {
   })
   it('Run/Stop sit at the left of the toolbar, before the example/open/save controls', async () => {
     await boot(true)
-    const { mount } = await import('@vue/test-utils')
-    const ScriptView = (await import('../src/views/ScriptView.vue')).default
-    const { i18n } = await import('../src/i18n')
     const w = mount(ScriptView, { global: { plugins: [i18n] } })
     const html = w.find('.toolbar').html()
     expect(html.indexOf('script-run')).toBeLessThan(html.indexOf('script-open'))
