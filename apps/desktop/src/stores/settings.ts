@@ -20,6 +20,7 @@ interface Stored {
   boundaries?: Record<string, Partial<Boundary>>
   defaultRobot?: string
   restoreSession?: boolean
+  robotIp?: string
   session?: SessionConfig | null
 }
 
@@ -39,15 +40,16 @@ export const useSettingsStore = defineStore('settings', () => {
   const defaultRobot = ref(s.defaultRobot ?? 'uf850')
   const restoreSession = ref(s.restoreSession ?? false)
   const session = ref<SessionConfig | null>(s.session ?? null)
+  const robotIp = ref(s.robotIp ?? '')
 
   function save() {
     const data: Stored = {
       stepMm: stepMm.value, stepDeg: stepDeg.value, boundaries: boundaries.value,
-      defaultRobot: defaultRobot.value, restoreSession: restoreSession.value, session: session.value,
+      defaultRobot: defaultRobot.value, restoreSession: restoreSession.value, session: session.value, robotIp: robotIp.value,
     }
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(data))
   }
-  watch([stepMm, stepDeg, boundaries, defaultRobot, restoreSession, session], save, { deep: true })
+  watch([stepMm, stepDeg, boundaries, defaultRobot, restoreSession, session, robotIp], save, { deep: true })
 
   function setStepMm(v: unknown) {
     stepMm.value = sanitizeStep(v, MOTION.stepMmRange, stepMm.value)
@@ -70,7 +72,7 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   return {
-    stepMm, stepDeg, boundaries, defaultRobot, restoreSession, session,
+    stepMm, stepDeg, boundaries, defaultRobot, restoreSession, session, robotIp,
     setStepMm, setStepDeg, boundaryFor, setBoundary, resetBoundary, save,
   }
 })

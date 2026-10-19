@@ -9,7 +9,10 @@ import MotionBar from '../components/MotionBar.vue'
 import InfoPanel from '../components/InfoPanel.vue'
 import AppFooter from '../components/AppFooter.vue'
 import LangSwitch from '../components/LangSwitch.vue'
+import { ref } from 'vue'
 import { useMotionStore } from '../stores/motion'
+import ScriptView from './ScriptView.vue'
+const page = ref<'control' | 'script'>('control')
 
 const motion = useMotionStore()
 
@@ -30,7 +33,12 @@ const insets = { left: 284, right: 274, top: 0, bottom: 260 }
       <AppFooter />
     </aside>
     <aside class="panel right dark-panel"><InfoPanel /></aside>
-    <MotionBar class="bar" />
+    <MotionBar v-if="page === 'control'" class="bar" />
+    <div v-if="page === 'script'" class="scriptwrap"><ScriptView /></div>
+    <div class="pagetab">
+      <button :class="{ on: page === 'control' }" data-test="page-control" @click="page = 'control'">{{ $t('tabs.check') }}</button>
+      <button :class="{ on: page === 'script' }" data-test="page-script" @click="page = 'script'">{{ $t('script.title') }}</button>
+    </div>
     <div class="topright">
       <LangSwitch />
       <button class="stop" data-test="stop" @click="motion.stop()">STOP</button>
@@ -49,6 +57,10 @@ const insets = { left: 284, right: 274, top: 0, bottom: 260 }
 .bar { position: absolute; left: 284px; right: 274px; bottom: 12px; }
 .sep { border-top: 1px solid #333; margin: 14px 0; flex: none; }
 .grow { flex: 1; min-height: 14px; }
+.scriptwrap { position: absolute; left: 284px; right: 274px; top: 64px; /* below the floating page tabs, STOP and language switch */ bottom: 12px; z-index: 5; }
+.pagetab { position: absolute; top: 16px; left: 296px; z-index: 9; display: flex; background: #1f2023; border-radius: 8px; padding: 3px; }
+.pagetab button { background: none; border: 0; color: #9a9ca3; font: inherit; font-size: 12px; padding: 6px 14px; border-radius: 6px; cursor: pointer; }
+.pagetab button.on { background: #3b6ef5; color: #fff; }
 .topright { position: absolute; top: 16px; right: 286px; z-index: 9; display: flex; align-items: center; gap: 12px; }
 .stop { background: #e5383b; color: #fff; font: inherit; font-weight: 700;
   letter-spacing: 1px; padding: 10px 30px; font-size: 15px; border: 0; border-radius: 6px; cursor: pointer; box-shadow: 0 0 0 2px rgba(229, 56, 59, .35); }

@@ -101,5 +101,31 @@
     "restoreSession": "启动时恢复上次配置",
     "restoreHint": "恢复上次的机型、末端工具、TCP 偏移、负载和关节角度。",
     "license": "许可证"
+  },
+  "conn": {
+    "simulation": "仿真",
+    "real": "真机",
+    "ip": "机械臂 IP",
+    "connect": "连接",
+    "disconnect": "断开",
+    "connectFailed": "无法连接到 {ip} 的机械臂，仍保持仿真模式。",
+    "ipHint": "机械臂确认应答后才会切换到真机。"
+  },
+  "script": {
+    "title": "Python 脚本",
+    "run": "运行",
+    "stop": "停止",
+    "open": "打开",
+    "save": "保存",
+    "example": "示例",
+    "console": "控制台",
+    "timeout": "超时（秒）",
+    "idle": "空闲",
+    "running": "运行中…",
+    "done": "完成",
+    "error": "出错",
+    "stopped": "已停止",
+    "jointExample": "关节运动",
+    "tcpExample": "TCP 运动"
   }
 }

@@ -21,7 +21,7 @@ jobs:
           python-version: "3.12"
       - run: |
           python scripts/fetch_ufg.py
-          python -m pip install -e third_party/ufactory_genesis -e "core[dev]"
+          python -m pip install -e third_party/ufactory_genesis -e "core[dev,real]"
           python scripts/build_sidecar.py
           python scripts/sync_assets.py
       - uses: pnpm/action-setup@v4

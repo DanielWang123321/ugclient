@@ -28,7 +28,7 @@ jobs:
       - name: Install
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e third_party/ufactory_genesis -e "core[dev]"
+          python -m pip install -e third_party/ufactory_genesis -e "core[dev,real]"
       - name: Lint
         working-directory: core
         run: ruff check . && ruff format --check .
@@ -130,7 +130,7 @@ jobs:
         run: |
           python scripts/fetch_ufg.py
           python -m pip install --upgrade pip
-          python -m pip install -e third_party/ufactory_genesis -e "core[dev]"
+          python -m pip install -e third_party/ufactory_genesis -e "core[dev,real]"
           python scripts/build_sidecar.py
           python scripts/sync_assets.py
       - uses: pnpm/action-setup@v4

@@ -83,3 +83,6 @@ export interface JogResult {
   q_deg: number[]
   tcp_pose: Pose6
 }
+
+export interface ConnectionStatus { mode: string; ip: string; connected: boolean; last_error: string }
+export interface ScriptStatus { job_id: string; status: string; output: string; error: string; elapsed_s: number }

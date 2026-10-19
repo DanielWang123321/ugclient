@@ -28,7 +28,13 @@ hiddenimports = collect_submodules("ufactory.robots") + collect_submodules("ufac
     "websockets.asyncio.server",
     "ugclient_core.server",
     "coal",
+    "ugclient_core.script_worker",
 ]
+# xarm-python-sdk is imported lazily by RealBackend, so PyInstaller cannot see it; bundle it explicitly.
+try:
+    hiddenimports += collect_submodules("xarm")
+except Exception:  # noqa: BLE001
+    pass
 
 a = Analysis(
     [str(ROOT / "core" / "sidecar_entry.py")],
