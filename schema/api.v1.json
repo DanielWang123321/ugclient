@@ -416,6 +416,187 @@
           "q_deg"
         ]
       }
+    },
+    "robot.connect": {
+      "params": {
+        "type": "object",
+        "properties": {
+          "ip": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "i",
+          "p"
+        ]
+      }
+    },
+    "robot.disconnect": {
+      "params": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    "robot.connection_status": {
+      "params": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    "robot.poll": {
+      "params": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": []
+      }
+    },
+    "robot.move_joints": {
+      "params": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string"
+          },
+          "q_deg": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "speed_pct": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "q",
+          "_",
+          "d",
+          "e",
+          "g"
+        ]
+      }
+    },
+    "robot.move_tcp": {
+      "params": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string"
+          },
+          "pose": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 6,
+            "maxItems": 6
+          },
+          "speed_pct": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "p",
+          "o",
+          "s",
+          "e"
+        ]
+      }
+    },
+    "robot.jog_tcp": {
+      "params": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string"
+          },
+          "axis": {
+            "type": "string"
+          },
+          "delta": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "axis",
+          "delta"
+        ]
+      }
+    },
+    "robot.stop_motion": {
+      "params": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": []
+      }
+    },
+    "script.start": {
+      "params": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "timeout_s": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "c",
+          "o",
+          "d",
+          "e"
+        ]
+      }
+    },
+    "script.status": {
+      "params": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "j",
+          "o",
+          "b",
+          "_",
+          "i",
+          "d"
+        ]
+      }
+    },
+    "script.stop": {
+      "params": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "j",
+          "o",
+          "b",
+          "_",
+          "i",
+          "d"
+        ]
+      }
     }
   },
   "errors": {

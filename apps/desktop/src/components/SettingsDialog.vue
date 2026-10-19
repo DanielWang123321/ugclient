@@ -94,6 +94,10 @@ const AX = ['X', 'Y', 'Z']
           </el-select>
         </div>
         <div class="row">
+          <span>{{ $t('conn.ip') }}</span>
+          <el-input v-model="settings.robotIp" style="width: 160px" placeholder="192.168.1.10" data-test="settings-robot-ip" />
+        </div>
+        <div class="row">
           <span>{{ $t('settings.restoreSession') }}</span>
           <el-switch v-model="settings.restoreSession" data-test="restore-session" />
         </div>

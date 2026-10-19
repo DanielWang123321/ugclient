@@ -9,7 +9,7 @@ from collections.abc import Callable
 from typing import Any
 
 from . import API_VERSION, __version__
-from .api import dyn, kin, motion, robot
+from .api import connection, dyn, kin, motion, robot, script
 from .backend import factory
 from .errors import (
     API_VERSION_MISMATCH,
@@ -41,6 +41,18 @@ METHODS: dict[str, Handler] = {
     "check.pose": dyn.check_pose,
     "motion.jog_tcp": motion.jog_tcp,
     "motion.align": motion.align,
+    # Sim/Real connection + backend-routed motion (real path is mocked in tests; needs hardware validation)
+    "robot.connect": connection.connect,
+    "robot.disconnect": connection.disconnect,
+    "robot.connection_status": connection.status,
+    "robot.poll": connection.poll,
+    "robot.move_joints": connection.move_joints,
+    "robot.move_tcp": connection.move_tcp,
+    "robot.jog_tcp": connection.jog_tcp,
+    "robot.stop_motion": connection.stop_motion,
+    "script.start": script.start,
+    "script.status": script.status,
+    "script.stop": script.stop,
 }
 
 
@@ -52,7 +64,7 @@ def hello_info() -> dict[str, Any]:
         "core_version": __version__,
         **factory.catalog().versions(),
         "pinocchio_version": pinocchio.__version__,
-        "capabilities": ["kin", "dyn"],
+        "capabilities": ["kin", "dyn", "motion", "connection", "script"],
         "backend": dict(factory.BACKEND_NAMES),
     }
 

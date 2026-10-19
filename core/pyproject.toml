@@ -20,6 +20,8 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.6", "pyinstaller>=6.10"]
+# Real-robot support: install in the sidecar environment only when a real arm is used.
+real = ["xarm-python-sdk>=1.13"]
 
 [project.scripts]
 ugclient-core = "ugclient_core.__main__:main"

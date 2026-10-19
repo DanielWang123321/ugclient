@@ -10,6 +10,7 @@ import type { FkResult, JogResult } from '../rpc/types'
 import { MOTION, STATE, approach, rate, stepSize, type JogTarget } from '../lib/motion'
 import { checkBoundary, hasTcpBounds, violationAxis, type Boundary, type Violation } from '../lib/boundary'
 import { useSettingsStore } from './settings'
+import { useConnectionStore } from './connection'
 import { fmt } from '../lib/units'
 
 const IK_UNREACHABLE = 3001
@@ -32,6 +33,7 @@ export const useMotionStore = defineStore('motion', () => {
   let token = 0
 
   const settings = useSettingsStore()
+  const conn = useConnectionStore()
 
   function boundary(): Boundary {
     const model = robot.info?.limits_deg ?? robot.q.map(() => [-360, 360] as [number, number])
@@ -67,6 +69,18 @@ export const useMotionStore = defineStore('motion', () => {
 
   /** Apply one increment (mm or deg, signed). Throws MotionError/RpcError when the move is impossible. */
   async function applyDelta(t: JogTarget, delta: number) {
+    if (conn.isReal()) {
+      // Real mode: same jog semantics, executed by the sidecar on the arm; state is read back.
+      if (t.kind === 'joint') {
+        const want = [...robot.q]; want[t.index] += delta
+        await guard(want)
+        const r = await engine.call<JogResult>('robot.move_joints', { session_id: robot.sessionId, q_deg: want })
+        void robot.setQ(r.q_deg); return
+      }
+      const r = await engine.call<JogResult>('robot.jog_tcp', { session_id: robot.sessionId, axis: t.axis, delta })
+      await guard(r.q_deg, r.tcp_pose)
+      void robot.setQ(r.q_deg); return
+    }
     if (t.kind === 'joint') {
       const i = t.index
       const want = [...robot.q]
@@ -141,6 +155,16 @@ export const useMotionStore = defineStore('motion', () => {
 
   /** Interpolate all joints to a target at the joint speed (Home / Align). */
   async function moveTo(target: number[]) {
+    if (conn.isReal()) {
+      const my = ++token
+      state.value = STATE.moving; active.value = null
+      try {
+        await guard(target)
+        const r = await engine.call<JogResult>('robot.move_joints', { session_id: robot.sessionId, q_deg: target })
+        if (my === token) { void robot.setQ(r.q_deg); stop() }
+      } catch (e) { if (my === token) await fail(e) }
+      return
+    }
     const my = ++token
     state.value = STATE.moving
     active.value = null
@@ -196,7 +220,12 @@ export const useMotionStore = defineStore('motion', () => {
       await fail(e)
       return
     }
-    await robot.setQ(next)
+    if (conn.isReal()) {
+      const r = await engine.call<JogResult>('robot.move_joints', { session_id: robot.sessionId, q_deg: next })
+      await robot.setQ(r.q_deg)
+    } else {
+      await robot.setQ(next)
+    }
     if (my === token) stop()
   }
 
@@ -217,6 +246,7 @@ export const useMotionStore = defineStore('motion', () => {
     token++
     active.value = null
     state.value = STATE.stopped
+    if (conn.isReal()) void engine.call('robot.stop_motion', { session_id: robot.sessionId }).catch(() => {})
   }
 
   return { speed, state, active, step, startContinuous, goStep, goStart, home, align, stop, moveTo }

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useRobotStore } from '../stores/robot'
+import ModeSwitch from './ModeSwitch.vue'
 const robot = useRobotStore()
 async function onModel(k: string) {
   await robot.select(k, 'none')
@@ -12,6 +13,7 @@ async function onEe(ee: string) {
 <template>
   <div>
     <div class="panel-title">{{ $t('robot.title') }}</div>
+    <ModeSwitch />
     <el-form label-position="left" label-width="96px" size="small">
       <el-form-item :label="$t('robot.model')">
         <el-select :model-value="robot.key" data-test="robot-select" @update:model-value="onModel">

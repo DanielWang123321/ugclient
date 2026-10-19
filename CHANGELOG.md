@@ -4,6 +4,10 @@ All notable changes to UGClient (formerly Uclient) are documented here. Format: 
 
 ## [Unreleased]
 
+### Added
+- Simulation / Real Robot switch (left panel, next to the robot model): entering an IP and connecting only flips the UI to Real after the sidecar confirms the arm answers (state + joints read back); failures show an error dialog and stay in Simulation. Switching back disconnects cleanly. The IP is persisted in Settings (General). In Real mode jog, Home, Align, STOP (state 4) and the info panel drive / read back the real arm. The real path is isolated in `core/ugclient_core/robot_backend.py` (xarm-python-sdk is an optional `ugclient-core[real]` dependency, imported lazily) and was validated only against mocks — hardware testing is still required.
+- Python Script page (top page tab): editor with Open / Save-as, Run and Stop, stdout/stderr console, status and timeout. Scripts run in a killable sidecar worker subprocess and use a preloaded `arm` (also `from ugclient_sdk import arm`) whose `set_joints` / `move_to` / `move_tcp` / `jog_tcp` / `home` / `stop` calls route to the simulation model or the real arm depending on the current mode. Two examples are built in (joint move, TCP move).
+
 ## [0.3.0] - 2026-10-12
 
 ### Changed

@@ -101,5 +101,31 @@
     "restoreSession": "Restore last session on startup",
     "restoreHint": "Restores robot, end effector, TCP offset, payload and joint angles from the last run.",
     "license": "License"
+  },
+  "conn": {
+    "simulation": "Simulation",
+    "real": "Real Robot",
+    "ip": "Robot IP",
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "connectFailed": "Cannot connect to the robot at {ip}. Staying in Simulation.",
+    "ipHint": "Switches to Real only after the arm answers."
+  },
+  "script": {
+    "title": "Python Script",
+    "run": "Run",
+    "stop": "Stop",
+    "open": "Open",
+    "save": "Save",
+    "example": "Example",
+    "console": "Console",
+    "timeout": "Timeout (s)",
+    "idle": "Idle",
+    "running": "Running…",
+    "done": "Done",
+    "error": "Error",
+    "stopped": "Stopped",
+    "jointExample": "Joint move",
+    "tcpExample": "TCP move"
   }
 }
